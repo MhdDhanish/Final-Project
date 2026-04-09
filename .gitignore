@@ -1,0 +1,11 @@
+# Ignored Data Files
+Data/
+*.log
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local environments
+.venv/
+env/

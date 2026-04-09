@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOC Analyst Console - Threat Hunting</title>
+    <!-- Modern Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="logo">
+            <div class="icon-pulse"></div>
+            <h1>Visual Threat Analysis <span class="highlight">| SIEM Console</span></h1>
+        </div>
+        <div class="nav-metrics">
+            <div class="status-indicator">
+                <span class="dot active"></span> Historical Analysis Mode
+            </div>
+            <div class="monospace text-sm">Dataset: Jan 22-26, 2019</div>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        
+        <!-- Sidebar / Filters -->
+        <aside class="sidebar glass-panel">
+            <h3>Investigation Filters</h3>
+            
+            <div class="filter-group">
+                <label>Date Range</label>
+                <select id="dateRange" class="glass-input">
+                    <option value="all">All Available Logs</option>
+                    <option value="2019-01-22">Jan 22, 2019</option>
+                    <option value="2019-01-23">Jan 23, 2019</option>
+                    <option value="2019-01-24">Jan 24, 2019</option>
+                    <option value="2019-01-25">Jan 25, 2019</option>
+                    <option value="2019-01-26">Jan 26, 2019</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Threat Severity</label>
+                <div class="checkbox-group">
+                    <label class="severity-label"><input type="checkbox" value="Low" checked> <span class="badge badge-low">Low</span></label>
+                    <label class="severity-label"><input type="checkbox" value="Medium" checked> <span class="badge badge-medium">Medium</span></label>
+                    <label class="severity-label"><input type="checkbox" value="High" checked> <span class="badge badge-high">High</span></label>
+                    <label class="severity-label"><input type="checkbox" value="Critical" checked> <span class="badge badge-critical">Critical</span></label>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label>Analysis Model</label>
+                <div class="model-info">
+                    Z-Score Threshold: <strong>1.5</strong><br>
+                    Agg Window: <strong>10 Min</strong><br>
+                    Target Data: <strong>Bytes_Sent</strong>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card glass-panel">
+                    <div class="kpi-icon icon-blue"></div>
+                    <div class="kpi-details">
+                        <p>Total Log Events Analysed</p>
+                        <h2 id="kpi-total-logs">--</h2>
+                    </div>
+                </div>
+                <div class="kpi-card glass-panel">
+                    <div class="kpi-icon icon-red"></div>
+                    <div class="kpi-details">
+                        <p>Critical Threats Detected</p>
+                        <h2 id="kpi-total-alerts">--</h2>
+                    </div>
+                </div>
+                <div class="kpi-card glass-panel">
+                    <div class="kpi-icon icon-orange"></div>
+                    <div class="kpi-details">
+                        <p>Overall Alert Rate</p>
+                        <h2 id="kpi-alert-rate">--%</h2>
+                    </div>
+                </div>
+                <div class="kpi-card glass-panel">
+                    <div class="kpi-icon icon-purple"></div>
+                    <div class="kpi-details">
+                        <p>Max Risk Score</p>
+                        <h2 id="kpi-max-risk">--</h2>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Area Row 1 -->
+            <div class="chart-row">
+                <div class="chart-container glass-panel span-full">
+                    <div class="chart-header">
+                        <h3>Dynamic Threshold Network Traffic Timeline</h3>
+                        <span class="badge badge-outline">Volumetric Anomalies</span>
+                    </div>
+                    <div class="canvas-wrapper timeline-wrapper">
+                        <canvas id="timelineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Area Row 2 -->
+            <div class="chart-row duo">
+                <div class="chart-container glass-panel">
+                    <div class="chart-header">
+                        <h3>Network Stress Level (Z-Score Deviations)</h3>
+                    </div>
+                    <div class="canvas-wrapper square-wrapper">
+                        <canvas id="zscoreChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container glass-panel">
+                    <div class="chart-header">
+                        <h3>Network Activity by Hour</h3>
+                    </div>
+                    <div class="canvas-wrapper square-wrapper">
+                        <canvas id="hourlyBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Threat Table -->
+            <div class="table-container glass-panel">
+                <div class="chart-header">
+                    <h3>Top Suspicious Windows (DDoS / Exfiltration Suspects)</h3>
+                    <div class="search-box">
+                        <input type="text" id="tableSearch" class="glass-input text-sm" placeholder="Search timestamp...">
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table id="threatTable">
+                        <thead>
+                            <tr>
+                                <th>Timestamp (UTC)</th>
+                                <th>Bytes Sent</th>
+                                <th>Z-Score</th>
+                                <th>Dynamic Threshold</th>
+                                <th>Risk Score</th>
+                                <th>Severity</th>
+                            </tr>
+                        </thead>
+                        <tbody id="threatTableBody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">
+        <span id="toast-message">Action Successful.</span>
+    </div>
+
+    <!-- Data source injected by python build script -->
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
